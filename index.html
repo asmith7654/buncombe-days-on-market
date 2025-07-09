@@ -565,13 +565,15 @@ function applyRadiusFilter() {
       }
       // Add new radius circle
       radiusCircle = L.circle(filterCenter, {
-        radius: filterRadiusMeters,
-        color: 'blue',
-        fillColor: 'blue',
-        fillOpacity: 0.05,
-        weight: 2,
-        dashArray: '5,5'
-      }).addTo(map);
+      radius: filterRadiusMeters,
+      color: 'blue',
+      fillColor: 'blue',
+      fillOpacity: 0.05,
+      weight: 2,
+      dashArray: '5,5',
+      interactive: false
+    }).addTo(map);
+
 
       computeDOMStats();
     })

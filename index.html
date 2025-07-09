@@ -176,6 +176,15 @@
       margin-right: 5px;
       border-radius: 2px;
     }
+
+    .radius-filter {
+      margin: 10px 0;
+      text-align: center;
+    }
+    .radius-filter input {
+      padding: 5px;
+      margin: 0 5px;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +214,14 @@
       <label><input type="checkbox" value="500k_to_1m_april_june_updated.json" checked> $500K–1M April–June</label>
       <label><input type="checkbox" value="500k_to_1m_unsold_updated.json" checked> $500K–1M Unsold (≥90 DOM)</label>
     </div>
+
+    <div class="radius-filter">
+      <input type="text" id="addressInput" placeholder="Enter address">
+      <input type="number" id="radiusInput" placeholder="Radius (miles)" step="0.1">
+      <button onclick="applyRadiusFilter()">Apply Radius Filter</button>
+      <button onclick="clearRadiusFilter()">Clear Radius Filter</button>
+    </div>
+
   </div>
 
   <div class="charts-summary-wrapper">
@@ -501,32 +518,111 @@ legend.addTo(map);
     computeDOMStats();
   }
 
-  function computeDOMStats() {
-    const domCounts = [0, 0, 0, 0]; // for pie chart bins
-    const allDoms = []; // for histogram bins
-    Object.values(layers).forEach(layer => {
-      if (!map.hasLayer(layer)) return;
-      layer.eachLayer(marker => {
-        if (!marker.options || marker.options.radius !== 3) return;
-        const content = marker.getPopup()?.getContent() || "";
-        const match = content.match(/Days on Market:<\/b> (\d+)/);
-        if (!match) return;
-        const dom = parseInt(match[1]);
-        allDoms.push(dom);
-        for (let i = 0; i < breaks.length - 1; i++) {
-          if (dom >= breaks[i] && dom < breaks[i + 1]) {
-            domCounts[i]++;
-            break;
-          }
-        }
-      });
-    });
-    updatePieChart(domCounts);
-    updateHistChart(allDoms);
-    updateSummaryStats(allDoms)
+let filterCenter = null;
+let filterRadiusMeters = null;
+let radiusCircle = null;
+
+
+function applyRadiusFilter() {
+  const address = document.getElementById("addressInput").value;
+  const radiusMiles = parseFloat(document.getElementById("radiusInput").value);
+
+  console.log("Address entered:", address);
+  console.log("Radius entered:", radiusMiles);
+
+  if (!address || isNaN(radiusMiles)) {
+    alert("Please enter a valid address and radius.");
+    return;
   }
 
-  function updateToggleAllState() {
+  const encodedAddress = encodeURIComponent(address);
+  const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}`;
+
+  fetch(geocodeUrl)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Geocoding request failed.");
+      }
+      return response.json();
+    })
+    .then(results => {
+      console.log("Geocode result:", results);
+
+      if (!results || results.length === 0) {
+        alert("Address not found.");
+        return;
+      }
+
+      const { lat, lon } = results[0];
+      filterCenter = L.latLng(lat, lon);
+      filterRadiusMeters = radiusMiles * 1609.34;
+
+      map.setView(filterCenter, 13);
+
+      // Remove old circle if exists
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
+      // Add new radius circle
+      radiusCircle = L.circle(filterCenter, {
+        radius: filterRadiusMeters,
+        color: 'blue',
+        fillColor: 'blue',
+        fillOpacity: 0.05,
+        weight: 2,
+        dashArray: '5,5'
+      }).addTo(map);
+
+      computeDOMStats();
+    })
+    .catch(error => {
+      console.error("Geocoding error:", error);
+      alert("Geocoding failed.");
+    });
+}
+
+function clearRadiusFilter() {
+  filterCenter = null;
+  filterRadiusMeters = null;
+
+  if (radiusCircle) {
+    map.removeLayer(radiusCircle);
+    radiusCircle = null;
+  }
+
+  computeDOMStats();
+}
+
+function computeDOMStats() {
+  const domCounts = [0, 0, 0, 0]; // for pie chart bins
+  const allDoms = []; // for histogram bins
+  Object.values(layers).forEach(layer => {
+    if (!map.hasLayer(layer)) return;
+    layer.eachLayer(marker => {
+      if (!marker.options || marker.options.radius !== 3) return;
+      const latlng = marker.getLatLng();
+      if (filterCenter && filterRadiusMeters !== null) {
+        if (filterCenter.distanceTo(latlng) > filterRadiusMeters) return;
+      }
+      const content = marker.getPopup()?.getContent() || "";
+      const match = content.match(/Days on Market:<\/b> (\d+)/);
+      if (!match) return;
+      const dom = parseInt(match[1]);
+      allDoms.push(dom);
+      for (let i = 0; i < breaks.length - 1; i++) {
+        if (dom >= breaks[i] && dom < breaks[i + 1]) {
+          domCounts[i]++;
+          break;
+        }
+      }
+    });
+  });
+  updatePieChart(domCounts);
+  updateHistChart(allDoms);
+  updateSummaryStats(allDoms)
+}
+
+function updateToggleAllState() {
     // Exclude the toggleAll checkbox itself from this check
     const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
                             .filter(cb => cb.id !== 'toggleAll');
@@ -562,4 +658,3 @@ legend.addTo(map);
 
 </body>
 </html>
-

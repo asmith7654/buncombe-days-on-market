@@ -268,6 +268,13 @@
   return lower === upper ? sorted[lower] : sorted[lower] + (sorted[upper] - sorted[lower]) * (idx - lower);
 }
 
+function mad(arr) {
+  if (arr.length === 0) return null;
+  const median = percentile(arr, 50);
+  const absoluteDeviations = arr.map(x => Math.abs(x - median));
+  return percentile(absoluteDeviations, 50); // median of absolute deviations
+}
+
   function updateSummaryStats(allDoms) {
     const contentDiv = document.getElementById("summaryContent");
     if (allDoms.length === 0) {
@@ -285,7 +292,8 @@
       <div class="summary-entry"><b>75th Percentile:</b> ${percentile(allDoms, 75).toFixed(1)}</div>
       <div class="summary-entry"><b>90th Percentile:</b> ${percentile(allDoms, 90).toFixed(1)}</div>
       <div class="summary-entry"><b>Standard Deviation:</b> ${stdDev(allDoms).toFixed(1)}</div>
-`   ;
+      <div class="summary-entry"><b>Median Absolute Deviation:</b> ${mad(allDoms).toFixed(1)}</div>
+    `;
     contentDiv.innerHTML = statsHtml;
   }
 </script>

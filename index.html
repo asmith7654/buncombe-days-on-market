@@ -522,15 +522,36 @@ legend.addTo(map);
   let filterRadiusMeters = null;
   let radiusCircle = null;
   let radiusMarker = null;
+  let resizeHandle = null;
 
-function createDraggableRadius(latlng, radiusMiles) {
+  const resizeIcon = L.divIcon({
+    className: 'resize-icon',
+    html: `<div style="
+      width: 14px;
+      height: 14px;
+      background: blue;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    "></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+
+
+  function createDraggableRadius(latlng, radiusMiles) {
+  // Remove old markers and circle
   if (radiusMarker) map.removeLayer(radiusMarker);
   if (radiusCircle) map.removeLayer(radiusCircle);
+  if (resizeHandle) map.removeLayer(resizeHandle);
 
+  filterCenter = latlng;
   filterRadiusMeters = radiusMiles * 1609.34;
 
+  // Create main draggable marker
   radiusMarker = L.marker(latlng, { draggable: true }).addTo(map);
 
+  // Create the circle
   radiusCircle = L.circle(latlng, {
     radius: filterRadiusMeters,
     color: 'blue',
@@ -540,16 +561,62 @@ function createDraggableRadius(latlng, radiusMiles) {
     interactive: false
   }).addTo(map);
 
+  // Compute where to put the resize handle (east edge)
+  const offsetPoint = latlng.destinationPoint(90, radiusMiles); // 90° = east
+  resizeHandle = L.marker(offsetPoint, {
+  draggable: true,
+  icon: resizeIcon
+}).addTo(map);
+  resizeHandle.bindTooltip(
+    `${(filterRadiusMeters / 1609.34).toFixed(2)} mi`,
+    { permanent: true, direction: 'top', offset: [0, -10] }
+  );
+
+
+  // Dragging center marker
   radiusMarker.on('drag', () => {
     const newCenter = radiusMarker.getLatLng();
     radiusCircle.setLatLng(newCenter);
     filterCenter = newCenter;
+
+    // Move resize handle relative to new center
+    const newHandlePos = newCenter.destinationPoint(90, filterRadiusMeters / 1609.34);
+    resizeHandle.setLatLng(newHandlePos);
+
     computeDOMStats();
   });
 
-  filterCenter = latlng;
+  // Dragging resize handle
+  resizeHandle.on('drag', () => {
+  const handlePos = resizeHandle.getLatLng();
+  const distance = filterCenter.distanceTo(handlePos);
+  filterRadiusMeters = distance;
+  radiusCircle.setRadius(distance);
+
+  const radiusMiles = (filterRadiusMeters / 1609.34).toFixed(2);
+  resizeHandle.setTooltipContent(`${radiusMiles} mi`);
+
+  computeDOMStats();
+});
+
   computeDOMStats();
 }
+
+L.LatLng.prototype.destinationPoint = function (brng, dist) {
+  dist = dist / 6371;  // convert dist to angular distance in radians (Earth radius = 6371km)
+  brng = brng * Math.PI / 180;  // convert degrees to radians
+
+  const lat1 = this.lat * Math.PI / 180;
+  const lon1 = this.lng * Math.PI / 180;
+
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist) +
+              Math.cos(lat1) * Math.sin(dist) * Math.cos(brng));
+  const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist) * Math.cos(lat1),
+                                 Math.cos(dist) - Math.sin(lat1) * Math.sin(lat2));
+
+  return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
+};
+
 
 function applyRadiusFilter() {
   const address = document.getElementById("addressInput").value;
@@ -595,8 +662,14 @@ function clearRadiusFilter() {
     radiusMarker = null;
   }
 
+  if (resizeHandle) {
+    map.removeLayer(resizeHandle);
+    resizeHandle = null;
+  }
+
   computeDOMStats();
 }
+
 
 function computeDOMStats() {
   const domCounts = [0, 0, 0, 0]; // for pie chart bins

@@ -518,64 +518,62 @@ legend.addTo(map);
     computeDOMStats();
   }
 
-let filterCenter = null;
-let filterRadiusMeters = null;
-let radiusCircle = null;
+  let filterCenter = null;
+  let filterRadiusMeters = null;
+  let radiusCircle = null;
+  let radiusMarker = null;
 
+function createDraggableRadius(latlng, radiusMiles) {
+  if (radiusMarker) map.removeLayer(radiusMarker);
+  if (radiusCircle) map.removeLayer(radiusCircle);
+
+  filterRadiusMeters = radiusMiles * 1609.34;
+
+  radiusMarker = L.marker(latlng, { draggable: true }).addTo(map);
+
+  radiusCircle = L.circle(latlng, {
+    radius: filterRadiusMeters,
+    color: 'blue',
+    fillColor: 'blue',
+    fillOpacity: 0.1,
+    dashArray: '4,4',
+    interactive: false
+  }).addTo(map);
+
+  radiusMarker.on('drag', () => {
+    const newCenter = radiusMarker.getLatLng();
+    radiusCircle.setLatLng(newCenter);
+    filterCenter = newCenter;
+    computeDOMStats();
+  });
+
+  filterCenter = latlng;
+  computeDOMStats();
+}
 
 function applyRadiusFilter() {
   const address = document.getElementById("addressInput").value;
   const radiusMiles = parseFloat(document.getElementById("radiusInput").value);
-
-  console.log("Address entered:", address);
-  console.log("Radius entered:", radiusMiles);
 
   if (!address || isNaN(radiusMiles)) {
     alert("Please enter a valid address and radius.");
     return;
   }
 
-  const encodedAddress = encodeURIComponent(address);
-  const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}`;
+  const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
 
   fetch(geocodeUrl)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("Geocoding request failed.");
-      }
-      return response.json();
-    })
+    .then(response => response.json())
     .then(results => {
-      console.log("Geocode result:", results);
-
       if (!results || results.length === 0) {
         alert("Address not found.");
         return;
       }
 
       const { lat, lon } = results[0];
-      filterCenter = L.latLng(lat, lon);
-      filterRadiusMeters = radiusMiles * 1609.34;
-
-      map.setView(filterCenter, 13);
-
-      // Remove old circle if exists
-      if (radiusCircle) {
-        map.removeLayer(radiusCircle);
-      }
-      // Add new radius circle
-      radiusCircle = L.circle(filterCenter, {
-      radius: filterRadiusMeters,
-      color: 'blue',
-      fillColor: 'blue',
-      fillOpacity: 0.05,
-      weight: 2,
-      dashArray: '5,5',
-      interactive: false
-    }).addTo(map);
-
-
-      computeDOMStats();
+      const center = L.latLng(lat, lon);
+      createDraggableRadius(center, radiusMiles);
+      map.setView(center, 13);
     })
     .catch(error => {
       console.error("Geocoding error:", error);
@@ -590,6 +588,11 @@ function clearRadiusFilter() {
   if (radiusCircle) {
     map.removeLayer(radiusCircle);
     radiusCircle = null;
+  }
+
+  if (radiusMarker) {
+    map.removeLayer(radiusMarker);
+    radiusMarker = null;
   }
 
   computeDOMStats();

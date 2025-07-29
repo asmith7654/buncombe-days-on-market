@@ -142,8 +142,8 @@
     }
 
     .map-border-container {
-      background-color: white;   
-      padding: 10px 10px 10px 10px;  
+      background-color: white;
+      padding: 10px 10px 10px 10px;
       border-left: 45px solid white;
       border-right: 45px solid white;
       border-bottom: 45px solid white;
@@ -189,558 +189,611 @@
 </head>
 <body>
 
-<header>
-  Buncombe County Housing — Days on Market
-</header>
+  <header>
+    Buncombe County Housing — Days on Market
+  </header>
 
-<div class="controls">
-  <div class="filter-box">
-    <div class="filter-title">Data Filters</div>
+  <div class="controls">
+    <div class="filter-box">
+      <div class="filter-title">Data Filters</div>
 
-    <div class="toggle-all-wrapper">
-      <label><input type="checkbox" id="toggleAll" checked> <strong>Toggle All</strong></label>
+      <div class="toggle-all-wrapper">
+        <label><input type="checkbox" id="toggleAll" checked> <strong>Toggle All</strong></label>
+      </div>
+
+      <div class="checkbox-grid">
+        <label><input type="checkbox" value="1m_plus_july_sep.json" checked> $1M+ July–Sep</label>
+        <label><input type="checkbox" value="1m_plus_oct_dec.json" checked> $1M+ Oct–Dec</label>
+        <label><input type="checkbox" value="1m_plus_jan_mar.json" checked> $1M+ Jan–Mar</label>
+        <label><input type="checkbox" value="1m_plus_april_june.json" checked> $1M+ April–June</label>
+        <label><input type="checkbox" value="1m_plus_unsold.json" checked> $1M+ Unsold (≥90 DOM)</label>
+        <label><input type="checkbox" value="500k_to_1m_july_sep.json" checked> $500K–1M July–Sep</label>
+        <label><input type="checkbox" value="500k_to_1m_oct_dec.json" checked> $500K–1M Oct–Dec</label>
+        <label><input type="checkbox" value="500k_to_1m_jan_mar.json" checked> $500K–1M Jan–Mar</label>
+        <label><input type="checkbox" value="500k_to_1m_april_june.json" checked> $500K–1M April–June</label>
+        <label><input type="checkbox" value="500k_to_1m_unsold.json" checked> $500K–1M Unsold (≥90 DOM)</label>
+      </div>
+
+      <div class="radius-filter">
+        <input type="text" id="addressInput" placeholder="Enter address">
+        <input type="number" id="radiusInput" placeholder="Radius (miles)" step="0.1">
+        <button onclick="applyRadiusFilter()">Apply Radius Filter</button>
+        <button onclick="clearRadiusFilter()">Clear Radius Filter</button>
+      </div>
     </div>
 
-    <div class="checkbox-grid">
-      <label><input type="checkbox" value="1m_plus_july_sep.json" checked> $1M+ July–Sep</label>
-      <label><input type="checkbox" value="1m_plus_oct_dec.json" checked> $1M+ Oct–Dec</label>
-      <label><input type="checkbox" value="1m_plus_jan_mar.json" checked> $1M+ Jan–Mar</label>
-      <label><input type="checkbox" value="1m_plus_april_june.json" checked> $1M+ April–June</label>
-      <label><input type="checkbox" value="1m_plus_unsold.json" checked> $1M+ Unsold (≥90 DOM)</label>
-
-      <label><input type="checkbox" value="500k_to_1m_july_sep.json" checked> $500K–1M July–Sep</label>
-      <label><input type="checkbox" value="500k_to_1m_oct_dec.json" checked> $500K–1M Oct–Dec</label>
-      <label><input type="checkbox" value="500k_to_1m_jan_mar.json" checked> $500K–1M Jan–Mar</label>
-      <label><input type="checkbox" value="500k_to_1m_april_june.json" checked> $500K–1M April–June</label>
-      <label><input type="checkbox" value="500k_to_1m_unsold.json" checked> $500K–1M Unsold (≥90 DOM)</label>
-    </div>
-
-    <div class="radius-filter">
-      <input type="text" id="addressInput" placeholder="Enter address">
-      <input type="number" id="radiusInput" placeholder="Radius (miles)" step="0.1">
-      <button onclick="applyRadiusFilter()">Apply Radius Filter</button>
-      <button onclick="clearRadiusFilter()">Clear Radius Filter</button>
-    </div>
-
-  </div>
-
-  <div class="charts-summary-wrapper">
-    <div class="chart-wrapper">
-      <div class="chart-title">DOM Category Distribution</div>
-      <canvas id="domPieChart" width="300" height="300"></canvas>
-    </div>
-    <div class="chart-wrapper">
-      <div class="chart-title">DOM Histogram (10-day bins)</div>
-      <canvas id="domHistChart" width="480" height="300"></canvas>
-    </div>
-    <div class="chart-wrapper">
-      <div class="chart-title">DOM Summary Statistics</div>
-      <div class="summary-box">
-        <div id="summaryContent"></div>
+    <div class="charts-summary-wrapper">
+      <div class="chart-wrapper">
+        <div class="chart-title">DOM Category Distribution</div>
+        <canvas id="domPieChart" width="300" height="300"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">DOM Histogram (10-day bins)</div>
+        <canvas id="domHistChart" width="480" height="300"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">DOM Summary Statistics</div>
+        <div class="summary-box">
+          <div id="summaryContent"></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="map-border-container">
-  <div id="map"></div>
-</div>
+  <div class="map-border-container">
+    <div id="map"></div>
+  </div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-<script>
-  function mean(arr) {
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-  }
-  function stdDev(arr) {
-    const avg = mean(arr);
-    const squareDiffs = arr.map(val => Math.pow(val - avg, 2));
-    return Math.sqrt(mean(squareDiffs));
-  }
-
-  function percentile(arr, p) {
-  if (arr.length === 0) return null;
-  const sorted = [...arr].sort((a, b) => a - b);
-  const idx = (p / 100) * (sorted.length - 1);
-  const lower = Math.floor(idx);
-  const upper = Math.ceil(idx);
-  return lower === upper ? sorted[lower] : sorted[lower] + (sorted[upper] - sorted[lower]) * (idx - lower);
-}
-
-function mad(arr) {
-  if (arr.length === 0) return null;
-  const median = percentile(arr, 50);
-  const absoluteDeviations = arr.map(x => Math.abs(x - median));
-  return percentile(absoluteDeviations, 50); // median of absolute deviations
-}
-
-  function updateSummaryStats(allDoms) {
-    const contentDiv = document.getElementById("summaryContent");
-    if (allDoms.length === 0) {
-      contentDiv.innerHTML = '';
-      return;
+  <script>
+    function mean(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+    function stdDev(arr) {
+      const avg = mean(arr);
+      const squareDiffs = arr.map(val => Math.pow(val - avg, 2));
+      return Math.sqrt(mean(squareDiffs));
     }
 
-    const statsHtml = `
-      <div class="summary-entry"><b>Total Properties:</b> ${allDoms.length}</div>
-      <div class="summary-entry"><b>Min:</b> ${Math.min(...allDoms)}</div>
-      <div class="summary-entry"><b>Max:</b> ${Math.max(...allDoms)}</div>
-      <div class="summary-entry"><b>Mean:</b> ${mean(allDoms).toFixed(1)}</div>
-      <div class="summary-entry"><b>25th Percentile:</b> ${percentile(allDoms, 25).toFixed(1)}</div>
-      <div class="summary-entry"><b>50th Percentile:</b> ${percentile(allDoms, 50).toFixed(1)}</div>
-      <div class="summary-entry"><b>75th Percentile:</b> ${percentile(allDoms, 75).toFixed(1)}</div>
-      <div class="summary-entry"><b>90th Percentile:</b> ${percentile(allDoms, 90).toFixed(1)}</div>
-      <div class="summary-entry"><b>Standard Deviation:</b> ${stdDev(allDoms).toFixed(1)}</div>
-      <div class="summary-entry"><b>Median Absolute Deviation:</b> ${mad(allDoms).toFixed(1)}</div>
-    `;
-    contentDiv.innerHTML = statsHtml;
-  }
-</script>
-
-<script>
-  const map = L.map('map').setView([35.5951, -82.5515], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-
-  if (typeof L.Control.Geocoder !== 'undefined') {
-    L.Control.geocoder({
-      geocoder: L.Control.Geocoder.nominatim(),
-      defaultMarkGeocode: true
-    }).addTo(map);
-  }
-
-const legend = L.control({ position: "bottomleft" });
-
-legend.onAdd = function (map) {
-  const div = L.DomUtil.create("div", "legend-box");
-  div.innerHTML = `
-    <strong>Days on Market</strong><br>
-    <i style="background:#1a9641;"></i> 0–30<br>
-    <i style="background:#9ce349;"></i> 30–90<br>
-    <i style="background:#fdae61;"></i> 90–120<br>
-    <i style="background:#db4b4d;"></i> 120+<br>
-  `;
-  return div;
-};
-
-legend.addTo(map);
-
-
-  const colors = ['#1a9641', '#9ce349', '#fdae61', '#db4b4d'];
-  const breaks = [0, 30, 90, 120, 9999];
-  const layers = {};
-
-  function getColor(dom) {
-    for (let i = 0; i < breaks.length - 1; i++) {
-      if (dom >= breaks[i] && dom < breaks[i + 1]) return colors[i];
+    function percentile(arr, p) {
+      if (arr.length === 0) return null;
+      const sorted = [...arr].sort((a, b) => a - b);
+      const idx = (p / 100) * (sorted.length - 1);
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx);
+      return lower === upper ? sorted[lower] : sorted[lower] + (sorted[upper] - sorted[lower]) * (idx - lower);
     }
-    return colors[colors.length - 1];
-  }
 
-  // Pie Chart Setup
-  const pieCtx = document.getElementById("domPieChart").getContext("2d");
-  const domPieChart = new Chart(pieCtx, {
-    type: "pie",
-    data: {
-      labels: ["0–30", "30–90", "90–120", "120+"],
-      datasets: [{
-        data: [0, 0, 0, 0],
-        backgroundColor: colors,
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: null }, // disables all interaction including hover
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 10
-          }
-        },
-        datalabels: {
-          formatter: (value, context) => {
-            if (value === 0) return '';
-            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-            const percent = total === 0 ? 0 : (value / total * 100).toFixed(1);
-            return `${percent}% (${value})`;
-          },
-          color: "#000",
-          font: {
-            weight: "bold",
-            size: 12
-          }
-        },
-        tooltip: {
-          enabled: false // fully disable hover tooltips
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-
-  // Histogram Setup
-  const histCtx = document.getElementById("domHistChart").getContext("2d");
-  const binSize = 10;
-  const maxBin = 300;
-  const histLabels = [];
-  for (let start = 0; start < maxBin; start += binSize) {
-    histLabels.push(`${start}–${start + binSize - 1}`);
-  }
-  histLabels.push(`${maxBin}+`);
-
-  const domHistChart = new Chart(histCtx, {
-    type: "bar",
-    data: {
-      labels: histLabels,
-      datasets: [{
-        label: 'Count',
-        data: new Array(histLabels.length).fill(0),
-        backgroundColor: '#4a90e2',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          anchor: 'end',
-          align: 'top',
-          color: '#333',
-          font: { weight: 'bold', size: 11 },
-          formatter: (value) => value > 0 ? value : ''
-        },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: context => `Count: ${context.parsed.y}`
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { maxRotation: 90, minRotation: 45 },
-          title: { display: true, text: 'Days on Market' }
-        },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: 'Number of Properties' },
-          ticks: { precision: 0 },
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-
-  function updatePieChart(domCounts) {
-    domPieChart.data.datasets[0].data = domCounts;
-    domPieChart.update();
-  }
-
-  function updateHistChart(allDoms) {
-  const binsCount = new Array(histLabels.length).fill(0);
-  allDoms.forEach(dom => {
-    if (dom >= maxBin) {
-      binsCount[binsCount.length - 1]++;
-    } else {
-      const binIndex = Math.floor(dom / binSize);
-      binsCount[binIndex]++;
+    function mad(arr) {
+      if (arr.length === 0) return null;
+      const median = percentile(arr, 50);
+      const absoluteDeviations = arr.map(x => Math.abs(x - median));
+      return percentile(absoluteDeviations, 50); // median of absolute deviations
     }
-  });
 
-  // Update data
-  domHistChart.data.datasets[0].data = binsCount;
-
-  // Dynamically update Y-axis suggestedMax
-  const maxCount = Math.max(...binsCount);
-  domHistChart.options.scales.y.suggestedMax = maxCount > 0 ? Math.ceil(maxCount * 1.1) : undefined;
-
-  domHistChart.update();
-}
-
-
-  async function loadLayer(file) {
-    const res = await fetch(file);
-    const data = await res.json();
-    const layer = L.layerGroup();
-
-    data.forEach(d => {
-      if (!d.lat || !d.lon || d['days on market'] === undefined || d['days on market'] === null) return;
-      const color = getColor(d['days on market']);
-      const popup = `
-        <b>Address:</b> ${d.address || 'N/A'}<br>
-        <b>Price:</b> $${Number(d.price).toLocaleString()}<br>
-        <b>Days on Market:</b> ${d['days on market']}<br>
-        <b>Status:</b> ${d.status || 'N/A'}<br>
-        <a href="${d.url || '#'}" target="_blank">View Listing</a>
-      `;
-
-      const latlng = [d.lat, d.lon];
-
-      L.circleMarker(latlng, {
-        radius: 15,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.2,
-        weight: 0
-      }).addTo(layer);
-
-      L.circleMarker(latlng, {
-        radius: 10,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.4,
-        weight: 0
-      }).addTo(layer);
-
-      L.circleMarker(latlng, {
-        radius: 3,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.8,
-        weight: 0
-      }).bindPopup(popup).addTo(layer);
-    });
-
-    layers[file] = layer;
-    layer.addTo(map);
-    computeDOMStats();
-  }
-
-  function toggleLayer(file, show) {
-    if (show) {
-      if (layers[file]) {
-        map.addLayer(layers[file]);
-      } else {
-        loadLayer(file);
-      }
-    } else {
-      if (layers[file]) map.removeLayer(layers[file]);
-    }
-    computeDOMStats();
-  }
-
-  let filterCenter = null;
-  let filterRadiusMeters = null;
-  let radiusCircle = null;
-  let radiusMarker = null;
-  let resizeHandle = null;
-
-  const resizeIcon = L.divIcon({
-    className: 'resize-icon',
-    html: `<div style="
-      width: 14px;
-      height: 14px;
-      background: blue;
-      border: 2px solid white;
-      border-radius: 50%;
-      box-shadow: 0 0 4px rgba(0,0,0,0.5);
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7]
-  });
-
-
-  function createDraggableRadius(latlng, radiusMiles) {
-  // Remove old markers and circle
-  if (radiusMarker) map.removeLayer(radiusMarker);
-  if (radiusCircle) map.removeLayer(radiusCircle);
-  if (resizeHandle) map.removeLayer(resizeHandle);
-
-  filterCenter = latlng;
-  filterRadiusMeters = radiusMiles * 1609.34;
-
-  // Create main draggable marker
-  radiusMarker = L.marker(latlng, { draggable: true }).addTo(map);
-
-  // Create the circle
-  radiusCircle = L.circle(latlng, {
-    radius: filterRadiusMeters,
-    color: 'blue',
-    fillColor: 'blue',
-    fillOpacity: 0.1,
-    dashArray: '4,4',
-    interactive: false
-  }).addTo(map);
-
-  // Compute where to put the resize handle (east edge)
-  const offsetPoint = latlng.destinationPoint(90, radiusMiles); // 90° = east
-  resizeHandle = L.marker(offsetPoint, {
-  draggable: true,
-  icon: resizeIcon
-}).addTo(map);
-  resizeHandle.bindTooltip(
-    `${(filterRadiusMeters / 1609.34).toFixed(2)} mi`,
-    { permanent: true, direction: 'top', offset: [0, -10] }
-  );
-
-
-  // Dragging center marker
-  radiusMarker.on('drag', () => {
-    const newCenter = radiusMarker.getLatLng();
-    radiusCircle.setLatLng(newCenter);
-    filterCenter = newCenter;
-
-    // Move resize handle relative to new center
-    const newHandlePos = newCenter.destinationPoint(90, filterRadiusMeters / 1609.34);
-    resizeHandle.setLatLng(newHandlePos);
-
-    computeDOMStats();
-  });
-
-  // Dragging resize handle
-  resizeHandle.on('drag', () => {
-  const handlePos = resizeHandle.getLatLng();
-  const distance = filterCenter.distanceTo(handlePos);
-  filterRadiusMeters = distance;
-  radiusCircle.setRadius(distance);
-
-  const radiusMiles = (filterRadiusMeters / 1609.34).toFixed(2);
-  resizeHandle.setTooltipContent(`${radiusMiles} mi`);
-
-  computeDOMStats();
-});
-
-  computeDOMStats();
-}
-
-L.LatLng.prototype.destinationPoint = function (brng, dist) {
-  dist = dist / 6371;  // convert dist to angular distance in radians (Earth radius = 6371km)
-  brng = brng * Math.PI / 180;  // convert degrees to radians
-
-  const lat1 = this.lat * Math.PI / 180;
-  const lon1 = this.lng * Math.PI / 180;
-
-  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist) +
-              Math.cos(lat1) * Math.sin(dist) * Math.cos(brng));
-  const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist) * Math.cos(lat1),
-                                 Math.cos(dist) - Math.sin(lat1) * Math.sin(lat2));
-
-  return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
-};
-
-
-function applyRadiusFilter() {
-  const address = document.getElementById("addressInput").value;
-  const radiusMiles = parseFloat(document.getElementById("radiusInput").value);
-
-  if (!address || isNaN(radiusMiles)) {
-    alert("Please enter a valid address and radius.");
-    return;
-  }
-
-  const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
-
-  fetch(geocodeUrl)
-    .then(response => response.json())
-    .then(results => {
-      if (!results || results.length === 0) {
-        alert("Address not found.");
+    function updateSummaryStats(allDoms) {
+      const contentDiv = document.getElementById("summaryContent");
+      if (allDoms.length === 0) {
+        contentDiv.innerHTML = '';
         return;
       }
 
-      const { lat, lon } = results[0];
-      const center = L.latLng(lat, lon);
-      createDraggableRadius(center, radiusMiles);
-      map.setView(center, 13);
-    })
-    .catch(error => {
-      console.error("Geocoding error:", error);
-      alert("Geocoding failed.");
-    });
-}
+      const statsHtml = `
+        <div class="summary-entry"><b>Total Properties:</b> ${allDoms.length}</div>
+        <div class="summary-entry"><b>Min:</b> ${Math.min(...allDoms)}</div>
+        <div class="summary-entry"><b>Max:</b> ${Math.max(...allDoms)}</div>
+        <div class="summary-entry"><b>Mean:</b> ${mean(allDoms).toFixed(1)}</div>
+        <div class="summary-entry"><b>25th Percentile:</b> ${percentile(allDoms, 25).toFixed(1)}</div>
+        <div class="summary-entry"><b>50th Percentile:</b> ${percentile(allDoms, 50).toFixed(1)}</div>
+        <div class="summary-entry"><b>75th Percentile:</b> ${percentile(allDoms, 75).toFixed(1)}</div>
+        <div class="summary-entry"><b>90th Percentile:</b> ${percentile(allDoms, 90).toFixed(1)}</div>
+        <div class="summary-entry"><b>Standard Deviation:</b> ${stdDev(allDoms).toFixed(1)}</div>
+        <div class="summary-entry"><b>Median Absolute Deviation:</b> ${mad(allDoms).toFixed(1)}</div>
+      `;
+      contentDiv.innerHTML = statsHtml;
+    }
+  </script>
 
-function clearRadiusFilter() {
-  filterCenter = null;
-  filterRadiusMeters = null;
+  <script>
+    const map = L.map('map').setView([35.5951, -82.5515], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
 
-  if (radiusCircle) {
-    map.removeLayer(radiusCircle);
-    radiusCircle = null;
-  }
+    if (typeof L.Control.Geocoder !== 'undefined') {
+      L.Control.geocoder({
+        geocoder: L.Control.Geocoder.nominatim(),
+        defaultMarkGeocode: true
+      }).addTo(map);
+    }
 
-  if (radiusMarker) {
-    map.removeLayer(radiusMarker);
-    radiusMarker = null;
-  }
+    // Track the current price range state: "500k-1m", "1m+", "mixed", or "none"
+    let priceRangeState = "mixed";
 
-  if (resizeHandle) {
-    map.removeLayer(resizeHandle);
-    resizeHandle = null;
-  }
+    const legend = L.control({ position: "bottomleft" });
 
-  computeDOMStats();
-}
+    legend.onAdd = function (map) {
+      const div = L.DomUtil.create("div", "legend-box");
+      const { labels, colors } = getCurrentBins();
+      div.innerHTML = `<strong>Days on Market</strong><br>` +
+        labels.map((label, i) =>
+          `<i style="background:${colors[i]};"></i> ${label}<br>`
+        ).join('');
+      return div;
+    };
 
+    legend.addTo(map);
 
-function computeDOMStats() {
-  const domCounts = [0, 0, 0, 0]; // for pie chart bins
-  const allDoms = []; // for histogram bins
-  Object.values(layers).forEach(layer => {
-    if (!map.hasLayer(layer)) return;
-    layer.eachLayer(marker => {
-      if (!marker.options || marker.options.radius !== 3) return;
-      const latlng = marker.getLatLng();
-      if (filterCenter && filterRadiusMeters !== null) {
-        if (filterCenter.distanceTo(latlng) > filterRadiusMeters) return;
+    function updateLegend() {
+      if (legend && legend._map) {
+        legend.remove();
+        legend.addTo(map);
       }
-      const content = marker.getPopup()?.getContent() || "";
-      const match = content.match(/Days on Market:<\/b> (\d+)/);
-      if (!match) return;
-      const dom = parseInt(match[1]);
-      allDoms.push(dom);
+    }
+
+    const layers = {};
+
+    function getColor(dom) {
+      const { breaks, colors } = getCurrentBins();
       for (let i = 0; i < breaks.length - 1; i++) {
-        if (dom >= breaks[i] && dom < breaks[i + 1]) {
-          domCounts[i]++;
-          break;
-        }
+        if (dom >= breaks[i] && dom < breaks[i + 1]) return colors[i];
       }
+      return colors[colors.length - 1];
+    }
+
+    function updatePriceRangeState() {
+      const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
+        .filter(cb => cb.checked && cb.value);
+
+      let has500k = false;
+      let has1m = false;
+
+      checkboxes.forEach(cb => {
+        if (cb.value.startsWith("500k_to_1m")) has500k = true;
+        if (cb.value.startsWith("1m_plus")) has1m = true;
+      });
+
+      if (has500k && !has1m) {
+        priceRangeState = "500k-1m";
+      } else if (!has500k && has1m) {
+        priceRangeState = "1m+";
+      } else if (has500k && has1m) {
+        priceRangeState = "mixed";
+      } else {
+        priceRangeState = "none";
+      }
+    }
+
+    function getCurrentBins() {
+      if (priceRangeState === "500k-1m") {
+        return {
+          breaks: [0, 8, 31, 91, 9999],
+          labels: ["0–7", "8–30", "31–90", "91+"],
+          colors: ['#1a9641', '#9ce349', '#fdae61', '#db4b4d']
+        };
+      }
+      if (priceRangeState === "1m+") {
+        return {
+          breaks: [0, 15, 91, 151, 9999],
+          labels: ["0–14", "15–90", "91–150", "151+"],
+          colors: ['#1a9641', '#9ce349', '#fdae61', '#db4b4d']
+        };
+      }
+      // mixed or none
+      return {
+        breaks: [0, 11, 46, 121, 9999],
+        labels: ["0–10", "11–45", "46–120", "121+"],
+        colors: ['#1a9641', '#9ce349', '#fdae61', '#db4b4d']
+      };
+    }
+
+    // Pie Chart Setup
+    const pieCtx = document.getElementById("domPieChart").getContext("2d");
+    const domPieChart = new Chart(pieCtx, {
+      type: "pie",
+      data: {
+        labels: getCurrentBins().labels,
+        datasets: [{
+          data: new Array(getCurrentBins().labels.length).fill(0),
+          backgroundColor: getCurrentBins().colors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: null }, // disables all interaction including hover
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              padding: 10
+            }
+          },
+          datalabels: {
+            formatter: (value, context) => {
+              if (value === 0) return '';
+              const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              const percent = total === 0 ? 0 : (value / total * 100).toFixed(1);
+              return `${percent}% (${value})`;
+            },
+            color: "#000",
+            font: {
+              weight: "bold",
+              size: 12
+            }
+          },
+          tooltip: {
+            enabled: false // fully disable hover tooltips
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
     });
-  });
-  updatePieChart(domCounts);
-  updateHistChart(allDoms);
-  updateSummaryStats(allDoms)
-}
 
-function updateToggleAllState() {
-    // Exclude the toggleAll checkbox itself from this check
-    const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
-                            .filter(cb => cb.id !== 'toggleAll');
-    const allChecked = checkboxes.every(cb => cb.checked);
-    document.getElementById("toggleAll").checked = allChecked;
-  }
+    // Histogram Setup
+    const histCtx = document.getElementById("domHistChart").getContext("2d");
+    const binSize = 10;
+    const maxBin = 300;
+    const histLabels = [];
+    for (let start = 0; start < maxBin; start += binSize) {
+      histLabels.push(`${start}–${start + binSize - 1}`);
+    }
+    histLabels.push(`${maxBin}+`);
 
+    const domHistChart = new Chart(histCtx, {
+      type: "bar",
+      data: {
+        labels: histLabels,
+        datasets: [{
+          label: 'Count',
+          data: new Array(histLabels.length).fill(0),
+          backgroundColor: '#4a90e2',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#333',
+            font: { weight: 'bold', size: 11 },
+            formatter: (value) => value > 0 ? value : ''
+          },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: context => `Count: ${context.parsed.y}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { maxRotation: 90, minRotation: 45 },
+            title: { display: true, text: 'Days on Market' }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Number of Properties' },
+            ticks: { precision: 0 },
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
+    });
 
+    function updatePieChart(domCounts) {
+      const { labels, colors } = getCurrentBins();
+      domPieChart.data.labels = labels;
+      domPieChart.data.datasets[0].data = domCounts;
+      domPieChart.data.datasets[0].backgroundColor = colors;
+      domPieChart.update();
+    }
 
-  document.querySelectorAll('.filter-box input[type="checkbox"]').forEach(checkbox => {
-    if (checkbox.id === 'toggleAll') return; // skip toggleAll itself
-    toggleLayer(checkbox.value, checkbox.checked);
-    checkbox.addEventListener('change', () => {
+    function updateHistChart(allDoms) {
+      const binsCount = new Array(histLabels.length).fill(0);
+      allDoms.forEach(dom => {
+        if (dom >= maxBin) {
+          binsCount[binsCount.length - 1]++;
+        } else {
+          const binIndex = Math.floor(dom / binSize);
+          binsCount[binIndex]++;
+        }
+      });
+
+      // Update data
+      domHistChart.data.datasets[0].data = binsCount;
+
+      // Dynamically update Y-axis suggestedMax
+      const maxCount = Math.max(...binsCount);
+      domHistChart.options.scales.y.suggestedMax = maxCount > 0 ? Math.ceil(maxCount * 1.1) : undefined;
+
+      domHistChart.update();
+    }
+
+    async function loadLayer(file) {
+      const res = await fetch(file);
+      const data = await res.json();
+      const layer = L.layerGroup();
+
+      data.forEach(d => {
+        if (!d.lat || !d.lon || d['days on market'] === undefined || d['days on market'] === null) return;
+        const color = getColor(d['days on market']);
+        const popup = `
+          <b>Address:</b> ${d.address || 'N/A'}<br>
+          <b>Price:</b> $${Number(d.price).toLocaleString()}<br>
+          <b>Days on Market:</b> ${d['days on market']}<br>
+          <b>Status:</b> ${d.status || 'N/A'}<br>
+          <a href="${d.url || '#'}" target="_blank">View Listing</a>
+        `;
+
+        const latlng = [d.lat, d.lon];
+
+        L.circleMarker(latlng, {
+          radius: 15,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.2,
+          weight: 0
+        }).addTo(layer);
+
+        L.circleMarker(latlng, {
+          radius: 10,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.4,
+          weight: 0
+        }).addTo(layer);
+
+        L.circleMarker(latlng, {
+          radius: 3,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.8,
+          weight: 0
+        }).bindPopup(popup).addTo(layer);
+      });
+
+      layers[file] = layer;
+      layer.addTo(map);
+      computeDOMStats();
+    }
+
+    function toggleLayer(file, show) {
+      if (show) {
+        if (layers[file]) {
+          map.addLayer(layers[file]);
+        } else {
+          loadLayer(file);
+        }
+      } else {
+        if (layers[file]) map.removeLayer(layers[file]);
+      }
+      computeDOMStats();
+    }
+
+    let filterCenter = null;
+    let filterRadiusMeters = null;
+    let radiusCircle = null;
+    let radiusMarker = null;
+    let resizeHandle = null;
+
+    const resizeIcon = L.divIcon({
+      className: 'resize-icon',
+      html: `<div style="
+        width: 14px;
+        height: 14px;
+        background: blue;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+      "></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    function createDraggableRadius(latlng, radiusMiles) {
+      // Remove old markers and circle
+      if (radiusMarker) map.removeLayer(radiusMarker);
+      if (radiusCircle) map.removeLayer(radiusCircle);
+      if (resizeHandle) map.removeLayer(resizeHandle);
+
+      filterCenter = latlng;
+      filterRadiusMeters = radiusMiles * 1609.34;
+
+      // Create main draggable marker
+      radiusMarker = L.marker(latlng, { draggable: true }).addTo(map);
+
+      // Create the circle
+      radiusCircle = L.circle(latlng, {
+        radius: filterRadiusMeters,
+        color: 'blue',
+        fillColor: 'blue',
+        fillOpacity: 0.1,
+        dashArray: '4,4',
+        interactive: false
+      }).addTo(map);
+
+      // Compute where to put the resize handle (east edge)
+      const offsetPoint = latlng.destinationPoint(90, radiusMiles); // 90° = east
+      resizeHandle = L.marker(offsetPoint, {
+        draggable: true,
+        icon: resizeIcon
+      }).addTo(map);
+      resizeHandle.bindTooltip(
+        `${(filterRadiusMeters / 1609.34).toFixed(2)} mi`,
+        { permanent: true, direction: 'top', offset: [0, -10] }
+      );
+
+      // Dragging center marker
+      radiusMarker.on('drag', () => {
+        const newCenter = radiusMarker.getLatLng();
+        radiusCircle.setLatLng(newCenter);
+        filterCenter = newCenter;
+
+        // Move resize handle relative to new center
+        const newHandlePos = newCenter.destinationPoint(90, filterRadiusMeters / 1609.34);
+        resizeHandle.setLatLng(newHandlePos);
+
+        computeDOMStats();
+      });
+
+      // Dragging resize handle
+      resizeHandle.on('drag', () => {
+        const handlePos = resizeHandle.getLatLng();
+        const distance = filterCenter.distanceTo(handlePos);
+        filterRadiusMeters = distance;
+        radiusCircle.setRadius(distance);
+
+        const radiusMiles = (filterRadiusMeters / 1609.34).toFixed(2);
+        resizeHandle.setTooltipContent(`${radiusMiles} mi`);
+
+        computeDOMStats();
+      });
+
+      computeDOMStats();
+    }
+
+    L.LatLng.prototype.destinationPoint = function (brng, dist) {
+      dist = dist / 6371;  // convert dist to angular distance in radians (Earth radius = 6371km)
+      brng = brng * Math.PI / 180;  // convert degrees to radians
+
+      const lat1 = this.lat * Math.PI / 180;
+      const lon1 = this.lng * Math.PI / 180;
+
+      const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist) +
+        Math.cos(lat1) * Math.sin(dist) * Math.cos(brng));
+      const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist) * Math.cos(lat1),
+        Math.cos(dist) - Math.sin(lat1) * Math.sin(lat2));
+
+      return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
+    };
+
+    function applyRadiusFilter() {
+      const address = document.getElementById("addressInput").value;
+      const radiusMiles = parseFloat(document.getElementById("radiusInput").value);
+
+      if (!address || isNaN(radiusMiles)) {
+        alert("Please enter a valid address and radius.");
+        return;
+      }
+
+      const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+
+      fetch(geocodeUrl)
+        .then(response => response.json())
+        .then(results => {
+          if (!results || results.length === 0) {
+            alert("Address not found.");
+            return;
+          }
+
+          const { lat, lon } = results[0];
+          const center = L.latLng(lat, lon);
+          createDraggableRadius(center, radiusMiles);
+          map.setView(center, 13);
+        })
+        .catch(error => {
+          console.error("Geocoding error:", error);
+          alert("Geocoding failed.");
+        });
+    }
+
+    function clearRadiusFilter() {
+      filterCenter = null;
+      filterRadiusMeters = null;
+
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+        radiusCircle = null;
+      }
+
+      if (radiusMarker) {
+        map.removeLayer(radiusMarker);
+        radiusMarker = null;
+      }
+
+      if (resizeHandle) {
+        map.removeLayer(resizeHandle);
+        resizeHandle = null;
+      }
+
+      computeDOMStats();
+    }
+
+    function computeDOMStats() {
+      const { breaks } = getCurrentBins();
+      const domCounts = new Array(breaks.length - 1).fill(0); // for pie chart bins
+      const allDoms = []; // for histogram bins
+      Object.values(layers).forEach(layer => {
+        if (!map.hasLayer(layer)) return;
+        layer.eachLayer(marker => {
+          if (!marker.options || marker.options.radius !== 3) return;
+          const latlng = marker.getLatLng();
+          if (filterCenter && filterRadiusMeters !== null) {
+            if (filterCenter.distanceTo(latlng) > filterRadiusMeters) return;
+          }
+          const content = marker.getPopup()?.getContent() || "";
+          const match = content.match(/Days on Market:<\/b> (\d+)/);
+          if (!match) return;
+          const dom = parseInt(match[1]);
+          allDoms.push(dom);
+          for (let i = 0; i < breaks.length - 1; i++) {
+            if (dom >= breaks[i] && dom < breaks[i + 1]) {
+              domCounts[i]++;
+              break;
+            }
+          }
+        });
+      });
+      updatePieChart(domCounts);
+      updateHistChart(allDoms);
+      updateSummaryStats(allDoms);
+      updateLegend();
+    }
+
+    function updateToggleAllState() {
+      // Exclude the toggleAll checkbox itself from this check
+      const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
+        .filter(cb => cb.id !== 'toggleAll');
+      const allChecked = checkboxes.every(cb => cb.checked);
+      document.getElementById("toggleAll").checked = allChecked;
+    }
+
+    document.querySelectorAll('.filter-box input[type="checkbox"]').forEach(checkbox => {
+      if (checkbox.id === 'toggleAll') return; // skip toggleAll itself
       toggleLayer(checkbox.value, checkbox.checked);
-      updateToggleAllState();
-    });
-  });
-
-  document.getElementById("toggleAll").addEventListener("click", function () {
-    const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
-                            .filter(cb => cb.id !== 'toggleAll');
-    const anyChecked = checkboxes.some(cb => cb.checked);
-    const newState = !anyChecked;
-
-    checkboxes.forEach(cb => {
-      cb.checked = newState;
-      toggleLayer(cb.value, newState);
+      updatePriceRangeState();
+      checkbox.addEventListener('change', () => {
+        toggleLayer(checkbox.value, checkbox.checked);
+        updateToggleAllState();
+        updatePriceRangeState();
+        computeDOMStats();
+      });
     });
 
-    this.checked = newState;
-  });
-</script>
+    document.getElementById("toggleAll").addEventListener("click", function () {
+      const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
+        .filter(cb => cb.id !== 'toggleAll');
+      const anyChecked = checkboxes.some(cb => cb.checked);
+      const newState = !anyChecked;
+
+      checkboxes.forEach(cb => {
+        cb.checked = newState;
+        toggleLayer(cb.value, newState);
+      });
+
+      this.checked = newState;
+      updatePriceRangeState();
+      computeDOMStats()
+    });
+  </script>
 
 </body>
 </html>

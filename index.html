@@ -727,6 +727,43 @@
       computeDOMStats();
     }
 
+    function updateMarkerColors() {
+      Object.values(layers).forEach(layer => {
+        if (!map.hasLayer(layer)) return;
+        // Collect all markers in this layer
+        const markers = [];
+        layer.eachLayer(marker => {
+          if (marker.options && [3, 10, 15].includes(marker.options.radius)) {
+            markers.push(marker);
+          }
+        });
+        // Group markers by lat/lon (since each property has 3 markers at the same spot)
+        const markerGroups = {};
+        markers.forEach(marker => {
+          const latlng = marker.getLatLng();
+          const key = `${latlng.lat},${latlng.lng}`;
+          if (!markerGroups[key]) markerGroups[key] = [];
+          markerGroups[key].push(marker);
+        });
+        // For each group, get DOM from the marker with popup (radius 3), then update all
+        Object.values(markerGroups).forEach(group => {
+          let dom = null;
+          group.forEach(marker => {
+            if (marker.options.radius === 3) {
+              const content = marker.getPopup()?.getContent() || "";
+              const match = content.match(/Days on Market:<\/b> (\d+)/);
+              if (match) dom = parseInt(match[1]);
+            }
+          });
+          if (dom === null) return;
+          const color = getColor(dom);
+          group.forEach(marker => {
+            marker.setStyle({ color, fillColor: color });
+          });
+        });
+      });
+    }
+
     function computeDOMStats() {
       const { breaks } = getCurrentBins();
       const domCounts = new Array(breaks.length - 1).fill(0); // for pie chart bins
@@ -774,6 +811,7 @@
         toggleLayer(checkbox.value, checkbox.checked);
         updateToggleAllState();
         updatePriceRangeState();
+        updateMarkerColors();
         computeDOMStats();
       });
     });
@@ -791,6 +829,7 @@
 
       this.checked = newState;
       updatePriceRangeState();
+      updateMarkerColors();
       computeDOMStats()
     });
   </script>

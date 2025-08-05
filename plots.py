@@ -15,7 +15,6 @@ Key Features:
 - Statistical annotations (R² and p-values)
 - Configurable layout and plotting parameters
 - Residual analysis for model diagnostics
-- High-resolution output for publication
 
 Author: Andrew Smith
 Date: July 2025

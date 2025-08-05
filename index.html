@@ -263,6 +263,12 @@
         <button onclick="applyRadiusFilter()">Apply Radius Filter</button>
         <button onclick="clearRadiusFilter()">Clear Radius Filter</button>
       </div>
+
+      <!-- Data Download Controls -->
+      <div class="radius-filter">
+        <button onclick="downloadVisibleData('csv')">Download Visible Data (CSV)</button>
+        <button onclick="downloadVisibleData('json')">Download Visible Data (JSON)</button>
+      </div>
     </div>
 
     <!-- Visualization Section -->
@@ -1008,6 +1014,138 @@
       updateMarkerColors();
       computeDOMStats()
     });
+
+    /**
+     * Downloads the currently visible markers data as CSV or JSON
+     * @param {string} format - 'csv' or 'json'
+     */
+    function downloadVisibleData(format) {
+      const visibleData = [];
+      const layersToProcess = [];
+      
+      // Identify which layers need to be processed
+      Object.entries(layers).forEach(([fileName, layer]) => {
+        if (!map.hasLayer(layer)) return; // Skip if layer is not visible
+        
+        // Get checkbox for this layer to confirm it's selected
+        const checkbox = document.querySelector(`input[value="${fileName}"]`);
+        if (!checkbox || !checkbox.checked) return;
+        
+        layersToProcess.push(fileName);
+      });
+      
+      if (layersToProcess.length === 0) {
+        alert('No data layers are currently visible. Please enable some data filters first.');
+        return;
+      }
+      
+      let processedLayers = 0;
+      
+      // Process each layer
+      layersToProcess.forEach(fileName => {
+        fetch(fileName)
+          .then(response => response.json())
+          .then(data => {
+            data.forEach(property => {
+              // Skip invalid entries
+              if (!property.lat || !property.lon || property['days on market'] === undefined || property['days on market'] === null) return;
+              
+              // Apply radius filter if active
+              if (filterCenter && filterRadiusMeters) {
+                const propertyLatLng = L.latLng(property.lat, property.lon);
+                const distance = filterCenter.distanceTo(propertyLatLng);
+                if (distance > filterRadiusMeters) return; // Skip if outside radius
+              }
+              
+              // Include only original columns from JSON file
+              const cleanProperty = {
+                ...property // Include all original columns only
+              };
+              
+              visibleData.push(cleanProperty);
+            });
+            
+            processedLayers++;
+            checkAndDownload();
+          })
+          .catch(error => {
+            console.error(`Error fetching data from ${fileName}:`, error);
+            processedLayers++;
+            checkAndDownload();
+          });
+      });
+      
+      function checkAndDownload() {
+        if (processedLayers >= layersToProcess.length) {
+          if (visibleData.length === 0) {
+            alert('No visible data to download. Please ensure some properties are visible on the map and within any active radius filter.');
+            return;
+          }
+          
+          if (format === 'csv') {
+            downloadCSV(visibleData);
+          } else if (format === 'json') {
+            downloadJSON(visibleData);
+          }
+        }
+      }
+    }
+    
+    /**
+     * Downloads data as CSV file
+     * @param {Array} data - Array of property objects
+     */
+    function downloadCSV(data) {
+      if (data.length === 0) return;
+      
+      // Get all unique keys for CSV headers
+      const headers = Object.keys(data[0]);
+      
+      // Create CSV content
+      let csvContent = headers.join(',') + '\n';
+      
+      data.forEach(row => {
+        const values = headers.map(header => {
+          let value = row[header];
+          // Escape commas and quotes in CSV
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+            value = '"' + value.replace(/"/g, '""') + '"';
+          }
+          return value;
+        });
+        csvContent += values.join(',') + '\n';
+      });
+      
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `buncombe_housing_visible_data_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+    
+    /**
+     * Downloads data as JSON file
+     * @param {Array} data - Array of property objects
+     */
+    function downloadJSON(data) {
+      const jsonContent = JSON.stringify(data, null, 2);
+      
+      // Create and trigger download
+      const blob = new Blob([jsonContent], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `buncombe_housing_visible_data_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
   </script>
 
 </body>

@@ -1,3 +1,26 @@
+"""
+plots.py
+
+This script generates visualization plots to analyze relationships between Days on Market (DOM)
+and various numeric predictors in the housing market data. For each predictor, it creates:
+1. A scatter plot with OLS regression line
+2. A residual plot to assess linearity and homoscedasticity
+
+The plots are organized into:
+- Individual PNG files (one per page of predictors)
+- A combined multi-page PDF containing all plots
+
+Key Features:
+- Automatic handling of all numeric predictors
+- Statistical annotations (R² and p-values)
+- Configurable layout and plotting parameters
+- Residual analysis for model diagnostics
+- High-resolution output for publication
+
+Author: Andrew Smith
+Date: July 2025
+"""
+
 # --------------------------------------------------
 # 0.  SETTINGS  ------------------------------------
 # --------------------------------------------------
@@ -39,7 +62,16 @@ if TARGET in numeric_cols:
 # --------------------------------------------------
 
 def fit_line_get_resid(x: pd.Series, y: pd.Series):
-    """Return ŷ and residuals of simple OLS (with intercept)."""
+    """
+    Fit OLS regression and return fitted values and residuals.
+    
+    Args:
+        x: Predictor variable
+        y: Target variable (DOM)
+    
+    Returns:
+        tuple: (fitted values, residuals)
+    """
     X_ = sm.add_constant(x, has_constant="add")
     model = sm.OLS(y, X_, missing="drop").fit()
     y_hat = model.predict(X_)
@@ -48,17 +80,34 @@ def fit_line_get_resid(x: pd.Series, y: pd.Series):
 
 
 def chunks(lst, size):
-    """Yield successive *size*-length chunks from *lst*."""
+    """
+    Split a list into chunks of specified size.
+    
+    Args:
+        lst: List to be split
+        size: Maximum size of each chunk
+    
+    Returns:
+        List containing next chunk of items
+    """
     for i in range(0, len(lst), size):
         yield lst[i : i + size]
 
 
 def plot_predictor_block(pred_list, page_no):
     """
-    Plot predictors in a grid.  Each predictor occupies two side‑by‑side plots:
-      • left  – scatter + OLS fit line (predictor → TARGET)
-      • right – residuals (TARGET − ŷ)
-    Layout: 4 columns total (2 cols per predictor  ×  2 predictors per row).
+    Create a grid of plots for a set of predictors.
+    
+    For each predictor, creates two plots:
+    1. Scatter plot with regression line
+    2. Residual plot for regression diagnostics
+    
+    Args:
+        pred_list: List of predictor column names to plot
+        page_no: Page number for multi-page output
+    
+    Returns:
+        matplotlib.figure.Figure: The complete figure with all plots
     """
     n_pred = len(pred_list)
     ncols = 4
@@ -134,6 +183,10 @@ def plot_predictor_block(pred_list, page_no):
 # --------------------------------------------------
 
 def main():
+    """
+    Main execution function. Creates output directory and generates all plots,
+    saving them as both individual PNGs and a combined PDF.
+    """
     out_dir = Path("plots_1m_plus")
     out_dir.mkdir(exist_ok=True)
 

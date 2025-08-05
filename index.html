@@ -1,16 +1,32 @@
 <!DOCTYPE html>
+<!-- 
+  Buncombe County Housing Market Analysis Tool
+  
+  Purpose: Interactive visualization of housing market data in Buncombe County,
+  focusing on Days on Market (DOM) analysis for properties in different price ranges.
+  
+  Key Features:
+  - Interactive map showing property locations with DOM-based color coding
+  - DOM distribution visualizations (pie chart and histogram)
+  - Statistical summaries of DOM data
+  - Filtering capabilities by price range and geographic radius
+  - Dynamic data updates based on user selections
+-->
 <html>
 <head>
   <meta charset="utf-8" />
   <title>Buncombe County Housing - Days on Market</title>
+  <!-- Ensure proper rendering and touch zooming on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- External Dependencies -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
   <style>
+    /* Base page styling */
     body {
       margin: 0;
       padding: 0;
@@ -18,6 +34,7 @@
       background: white;
     }
 
+    /* Header styling - main title container */
     header {
       background-color: #2c3e50;
       color: white;
@@ -29,6 +46,7 @@
       user-select: none;
     }
 
+    /* Main controls container */
     .controls {
       background: #fff;
       padding: 15px;
@@ -40,6 +58,7 @@
       margin-bottom: 30px;
     }
 
+    /* Filter box - contains data filter checkboxes */
     .filter-box {
       border: 1px solid #ccc;
       background: #fafafa;
@@ -49,6 +68,7 @@
       margin-bottom: 20px;
     }
 
+    /* Filter section title */
     .filter-title {
       font-size: 1.2rem;
       font-weight: bold;
@@ -56,12 +76,14 @@
       text-align: center;
     }
 
+    /* Toggle all checkbox container */
     .toggle-all-wrapper {
       display: flex;
       justify-content: center;
       margin-bottom: 10px;
     }
 
+    /* Grid layout for filter checkboxes */
     .checkbox-grid {
       display: grid;
       grid-template-columns: repeat(5, auto);
@@ -69,6 +91,7 @@
       justify-content: center;
     }
 
+    /* Individual checkbox label styling */
     .checkbox-grid label {
       font-size: 14px;
       display: flex;
@@ -78,6 +101,7 @@
       cursor: pointer;
     }
 
+    /* Charts and summary statistics container */
     .charts-summary-wrapper {
       display: flex;
       justify-content: center;
@@ -87,6 +111,7 @@
       margin-bottom: 30px;
     }
 
+    /* Individual chart container */
     .chart-wrapper {
       display: flex;
       flex-direction: column;
@@ -94,6 +119,7 @@
       width: fit-content;
     }
 
+    /* Chart title styling */
     .chart-title {
       font-weight: bold;
       font-size: 1.2rem;
@@ -102,6 +128,7 @@
       text-align: center;
     }
 
+    /* Canvas element styling for charts */
     canvas {
       background: white;
       border: 1px solid #ccc;
@@ -109,16 +136,19 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
+    /* Pie chart size constraints */
     #domPieChart {
       max-width: 300px;
       max-height: 300px;
     }
 
+    /* Histogram size constraints */
     #domHistChart {
       max-width: 480px;
       max-height: 300px;
     }
 
+    /* Summary statistics box styling */
     .summary-box {
       background: #fff;
       padding: 10px 20px;
@@ -129,6 +159,7 @@
       width: 250px;
     }
 
+    /* Summary box title */
     .summary-title {
       font-weight: bold;
       font-size: 1.2rem;
@@ -137,10 +168,12 @@
       text-align: center;
     }
 
+    /* Individual summary statistic entry */
     .summary-entry {
       margin-bottom: 6px;
     }
 
+    /* Map container with padding and border */
     .map-border-container {
       background-color: white;
       padding: 10px 10px 10px 10px;
@@ -149,12 +182,14 @@
       border-bottom: 45px solid white;
     }
 
+    /* Main map container */
     #map {
       height: 750px;
       width: 100%;
       border: 5px solid #ccc;
     }
 
+    /* Map legend styling */
     .legend-box {
       position: absolute;
       width: 130px;
@@ -169,6 +204,7 @@
       user-select: none;
     }
 
+    /* Legend color boxes */
     .legend-box i {
       width: 12px;
       height: 12px;
@@ -177,10 +213,12 @@
       border-radius: 2px;
     }
 
+    /* Radius filter input container */
     .radius-filter {
       margin: 10px 0;
       text-align: center;
     }
+    /* Radius filter input fields */
     .radius-filter input {
       padding: 5px;
       margin: 0 5px;
@@ -193,14 +231,18 @@
     Buncombe County Housing — Days on Market
   </header>
 
+  <!-- Control Panel Section -->
   <div class="controls">
+    <!-- Data Filter Box -->
     <div class="filter-box">
       <div class="filter-title">Data Filters</div>
 
+      <!-- Toggle All Checkbox -->
       <div class="toggle-all-wrapper">
         <label><input type="checkbox" id="toggleAll" checked> <strong>Toggle All</strong></label>
       </div>
 
+      <!-- Price Range and Time Period Filters -->
       <div class="checkbox-grid">
         <label><input type="checkbox" value="1m_plus_july_sep.json" checked> $1M+ July–Sep</label>
         <label><input type="checkbox" value="1m_plus_oct_dec.json" checked> $1M+ Oct–Dec</label>
@@ -214,6 +256,7 @@
         <label><input type="checkbox" value="500k_to_1m_unsold.json" checked> $500K–1M Unsold (≥90 DOM)</label>
       </div>
 
+      <!-- Geographic Radius Filter Controls -->
       <div class="radius-filter">
         <input type="text" id="addressInput" placeholder="Enter address">
         <input type="number" id="radiusInput" placeholder="Radius (miles)" step="0.1">
@@ -222,15 +265,19 @@
       </div>
     </div>
 
+    <!-- Visualization Section -->
     <div class="charts-summary-wrapper">
+      <!-- Pie Chart -->
       <div class="chart-wrapper">
         <div class="chart-title">DOM Category Distribution</div>
         <canvas id="domPieChart" width="300" height="300"></canvas>
       </div>
+      <!-- Histogram -->
       <div class="chart-wrapper">
         <div class="chart-title">DOM Histogram (10-day bins)</div>
         <canvas id="domHistChart" width="480" height="300"></canvas>
       </div>
+      <!-- Summary Statistics Box -->
       <div class="chart-wrapper">
         <div class="chart-title">DOM Summary Statistics</div>
         <div class="summary-box">
@@ -244,9 +291,11 @@
     <div id="map"></div>
   </div>
 
+  <!-- External Libraries -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
+  <!-- Statistical Functions -->
   <script>
     function mean(arr) {
       return arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -297,11 +346,14 @@
   </script>
 
   <script>
+    // Initialize map centered on Buncombe County
     const map = L.map('map').setView([35.5951, -82.5515], 11);
+    // Add OpenStreetMap tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
+    // Add geocoding control if available
     if (typeof L.Control.Geocoder !== 'undefined') {
       L.Control.geocoder({
         geocoder: L.Control.Geocoder.nominatim(),
@@ -309,11 +361,17 @@
       }).addTo(map);
     }
 
-    // Track the current price range state: "500k-1m", "1m+", "mixed", or "none"
+    // State management for price range filtering
     let priceRangeState = "mixed";
 
+    // Map legend setup
     const legend = L.control({ position: "bottomleft" });
 
+    /**
+     * Creates and returns the legend DOM element
+     * @param {L.Map} map - The Leaflet map instance
+     * @returns {HTMLElement} The legend container
+     */
     legend.onAdd = function (map) {
       const div = L.DomUtil.create("div", "legend-box");
       const { labels, colors } = getCurrentBins();
@@ -326,6 +384,9 @@
 
     legend.addTo(map);
 
+    /**
+     * Updates the legend when DOM ranges change
+     */
     function updateLegend() {
       if (legend && legend._map) {
         legend.remove();
@@ -333,8 +394,14 @@
       }
     }
 
+    // Store for map layers, keyed by data file name
     const layers = {};
 
+    /**
+     * Determines marker color based on DOM value
+     * @param {number} dom - Days on Market value
+     * @returns {string} Color code for the marker
+     */
     function getColor(dom) {
       const { breaks, colors } = getCurrentBins();
       for (let i = 0; i < breaks.length - 1; i++) {
@@ -343,6 +410,10 @@
       return colors[colors.length - 1];
     }
 
+    /**
+     * Updates the price range state based on active filters
+     * Determines which DOM ranges to use based on selected property types
+     */
     function updatePriceRangeState() {
       const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
         .filter(cb => cb.checked && cb.value);
@@ -350,11 +421,13 @@
       let has500k = false;
       let has1m = false;
 
+      // Check which price ranges are active
       checkboxes.forEach(cb => {
         if (cb.value.startsWith("500k_to_1m")) has500k = true;
         if (cb.value.startsWith("1m_plus")) has1m = true;
       });
 
+      // Set appropriate state based on active filters
       if (has500k && !has1m) {
         priceRangeState = "500k-1m";
       } else if (!has500k && has1m) {
@@ -366,6 +439,10 @@
       }
     }
 
+    /**
+     * Returns DOM ranges and colors based on current price range state
+     * @returns {Object} Configuration object with breaks, labels, and colors
+     */
     function getCurrentBins() {
       if (priceRangeState === "500k-1m") {
         return {
@@ -434,16 +511,19 @@
       plugins: [ChartDataLabels]
     });
 
-    // Histogram Setup
+   // Initialize histogram chart
     const histCtx = document.getElementById("domHistChart").getContext("2d");
     const binSize = 10;
     const maxBin = 300;
     const histLabels = [];
+
+    // Generate histogram bin labels
     for (let start = 0; start < maxBin; start += binSize) {
       histLabels.push(`${start}–${start + binSize - 1}`);
     }
     histLabels.push(`${maxBin}+`);
 
+    // Configure histogram chart
     const domHistChart = new Chart(histCtx, {
       type: "bar",
       data: {
@@ -488,6 +568,10 @@
       plugins: [ChartDataLabels]
     });
 
+    /**
+     * Updates the pie chart with new DOM category counts
+     * @param {number[]} domCounts - Array of counts for each DOM category
+     */
     function updatePieChart(domCounts) {
       const { labels, colors } = getCurrentBins();
       domPieChart.data.labels = labels;
@@ -496,6 +580,10 @@
       domPieChart.update();
     }
 
+    /**
+     * Updates the histogram with new DOM values
+     * @param {number[]} allDoms - Array of all DOM values to be binned
+     */
     function updateHistChart(allDoms) {
       const binsCount = new Array(histLabels.length).fill(0);
       allDoms.forEach(dom => {
@@ -517,14 +605,22 @@
       domHistChart.update();
     }
 
+    /**
+     * Loads and displays property data from a JSON file
+     * @param {string} file - Path to the JSON file containing property data
+     * @returns {Promise<void>}
+     */
     async function loadLayer(file) {
       const res = await fetch(file);
       const data = await res.json();
       const layer = L.layerGroup();
 
       data.forEach(d => {
+        // Skip invalid entries
         if (!d.lat || !d.lon || d['days on market'] === undefined || d['days on market'] === null) return;
         const color = getColor(d['days on market']);
+      
+        // Create popup content with property information
         const popup = `
           <b>Address:</b> ${d.address || 'N/A'}<br>
           <b>Price:</b> $${Number(d.price).toLocaleString()}<br>
@@ -535,6 +631,8 @@
 
         const latlng = [d.lat, d.lon];
 
+        // Create three concentric circles for each property
+        // Outer circle (largest, most transparent)
         L.circleMarker(latlng, {
           radius: 15,
           color: color,
@@ -543,6 +641,7 @@
           weight: 0
         }).addTo(layer);
 
+        // Middle circle
         L.circleMarker(latlng, {
           radius: 10,
           color: color,
@@ -551,6 +650,7 @@
           weight: 0
         }).addTo(layer);
 
+        // Inner circle (smallest, most opaque, contains popup)
         L.circleMarker(latlng, {
           radius: 3,
           color: color,
@@ -560,11 +660,17 @@
         }).bindPopup(popup).addTo(layer);
       });
 
+      // Store and display the layer
       layers[file] = layer;
       layer.addTo(map);
       computeDOMStats();
     }
 
+    /**
+     * Toggles visibility of a data layer
+     * @param {string} file - Path to the JSON file for the layer
+     * @param {boolean} show - Whether to show or hide the layer
+     */
     function toggleLayer(file, show) {
       if (show) {
         if (layers[file]) {
@@ -578,12 +684,14 @@
       computeDOMStats();
     }
 
+    // Variables for radius filter components
     let filterCenter = null;
     let filterRadiusMeters = null;
     let radiusCircle = null;
     let radiusMarker = null;
     let resizeHandle = null;
 
+    // Define resize handle icon style
     const resizeIcon = L.divIcon({
       className: 'resize-icon',
       html: `<div style="
@@ -598,6 +706,12 @@
       iconAnchor: [7, 7]
     });
 
+
+     /**
+     * Creates a draggable radius filter on the map
+     * @param {L.LatLng} latlng - Center point for the radius
+     * @param {number} radiusMiles - Initial radius in miles
+     */
     function createDraggableRadius(latlng, radiusMiles) {
       // Remove old markers and circle
       if (radiusMarker) map.removeLayer(radiusMarker);
@@ -675,6 +789,10 @@
       return L.latLng(lat2 * 180 / Math.PI, lon2 * 180 / Math.PI);
     };
 
+    /**
+     * Apply radius filter using address input
+     * Geocodes address and creates radius filter
+     */
     function applyRadiusFilter() {
       const address = document.getElementById("addressInput").value;
       const radiusMiles = parseFloat(document.getElementById("radiusInput").value);
@@ -705,6 +823,9 @@
         });
     }
 
+    /**
+     * Clear radius filter and remove all filter components
+     */
     function clearRadiusFilter() {
       filterCenter = null;
       filterRadiusMeters = null;
@@ -727,6 +848,10 @@
       computeDOMStats();
     }
 
+    /**
+     * Update marker colors based on current DOM ranges
+     * Groups markers by location and updates all markers for each property
+     */
     function updateMarkerColors() {
       Object.values(layers).forEach(layer => {
         if (!map.hasLayer(layer)) return;
@@ -764,23 +889,48 @@
       });
     }
 
+    /**
+     * Computes and updates all DOM (Days on Market) statistics and visualizations.
+     * This function:
+     * 1. Collects DOM values from visible properties
+     * 2. Applies radius filtering if active
+     * 3. Categorizes properties into DOM ranges
+     * 4. Updates all visualizations with new data
+     */
     function computeDOMStats() {
+      // Get current DOM range breaks for categorization
       const { breaks } = getCurrentBins();
+      // Initialize arrays for different visualization needs
       const domCounts = new Array(breaks.length - 1).fill(0); // for pie chart bins
       const allDoms = []; // for histogram bins
+
+      // Process each visible layer
       Object.values(layers).forEach(layer => {
         if (!map.hasLayer(layer)) return;
+          
+        // Process each marker in the layer
         layer.eachLayer(marker => {
+          // Only process markers with popups (radius 3 markers contain the property data)
           if (!marker.options || marker.options.radius !== 3) return;
+
+          // Get marker location for radius filtering
           const latlng = marker.getLatLng();
+
+          // Apply radius filter if active
           if (filterCenter && filterRadiusMeters !== null) {
             if (filterCenter.distanceTo(latlng) > filterRadiusMeters) return;
           }
+
+          // Extract DOM value from marker popup
           const content = marker.getPopup()?.getContent() || "";
           const match = content.match(/Days on Market:<\/b> (\d+)/);
           if (!match) return;
+
+          // Parse and store DOM value
           const dom = parseInt(match[1]);
           allDoms.push(dom);
+
+          // Categorize DOM value into appropriate bin for pie chart
           for (let i = 0; i < breaks.length - 1; i++) {
             if (dom >= breaks[i] && dom < breaks[i + 1]) {
               domCounts[i]++;
@@ -789,12 +939,18 @@
           }
         });
       });
+      // Update all visualizations with new data
       updatePieChart(domCounts);
       updateHistChart(allDoms);
       updateSummaryStats(allDoms);
       updateLegend();
     }
 
+    /**
+     * Updates the state of the "Toggle All" checkbox based on individual checkbox states.
+     * If all individual checkboxes are checked, the "Toggle All" checkbox will be checked.
+     * Excludes the "Toggle All" checkbox itself from the evaluation.
+     */
     function updateToggleAllState() {
       // Exclude the toggleAll checkbox itself from this check
       const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
@@ -803,10 +959,16 @@
       document.getElementById("toggleAll").checked = allChecked;
     }
 
+    // Initialize all data layer checkboxes and set up their event listeners
     document.querySelectorAll('.filter-box input[type="checkbox"]').forEach(checkbox => {
-      if (checkbox.id === 'toggleAll') return; // skip toggleAll itself
+      // Skip toggleAll itself
+      if (checkbox.id === 'toggleAll') return;
+
+      // Initialize layer visibility based on checkbox state
       toggleLayer(checkbox.value, checkbox.checked);
       updatePriceRangeState();
+
+      // Set up change event handler for individual checkboxes
       checkbox.addEventListener('change', () => {
         toggleLayer(checkbox.value, checkbox.checked);
         updateToggleAllState();
@@ -816,18 +978,32 @@
       });
     });
 
+    /**
+     * Event handler for the "Toggle All" checkbox.
+     * Implements an inverse logic where:
+     * - If any checkboxes are checked, it will uncheck all
+     * - If all checkboxes are unchecked, it will check all
+     * This creates a more intuitive toggle behavior for users.
+     */
     document.getElementById("toggleAll").addEventListener("click", function () {
+      // Get all checkboxes except "Toggle All"
       const checkboxes = Array.from(document.querySelectorAll('.filter-box input[type="checkbox"]'))
         .filter(cb => cb.id !== 'toggleAll');
+      
+      // Determine the new state based on current checkbox states
       const anyChecked = checkboxes.some(cb => cb.checked);
       const newState = !anyChecked;
 
+      // Update all checkboxes and their corresponding layers
       checkboxes.forEach(cb => {
         cb.checked = newState;
         toggleLayer(cb.value, newState);
       });
 
+      // Update the "Toggle All" checkbox state
       this.checked = newState;
+
+      // Update the visualization state
       updatePriceRangeState();
       updateMarkerColors();
       computeDOMStats()

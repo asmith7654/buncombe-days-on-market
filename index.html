@@ -452,15 +452,15 @@
     function getCurrentBins() {
       if (priceRangeState === "500k-1m") {
         return {
-          breaks: [0, 8, 31, 91, 9999],
-          labels: ["0–7", "8–30", "31–90", "91+"],
+          breaks: [0, 8, 31, 90, 9999],
+          labels: ["0–7", "8–30", "31–89", "90+"],
           colors: ['#1a9641', '#9ce349', '#fdae61', '#db4b4d']
         };
       }
       if (priceRangeState === "1m+") {
         return {
-          breaks: [0, 15, 91, 151, 9999],
-          labels: ["0–14", "15–90", "91–150", "151+"],
+          breaks: [0, 15, 90, 151, 9999],
+          labels: ["0–14", "15–89", "90–150", "151+"],
           colors: ['#1a9641', '#9ce349', '#fdae61', '#db4b4d']
         };
       }

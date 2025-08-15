@@ -39,7 +39,7 @@ def dom_to_level_lower(dom):
         return 0
     elif dom < 31:
         return 1
-    elif dom < 91:
+    elif dom < 90:
         return 2
     else:
         return 3
@@ -55,7 +55,7 @@ def dom_to_level_upper(dom):
     """
     if dom < 15:
         return 0
-    elif dom < 91:
+    elif dom < 90:
         return 1
     elif dom < 151:
         return 2
